@@ -30,16 +30,16 @@ export default {
   },
   data () {
     return {
+      dead: false,
       lives: 2,
       ticker: null,
-      brickCols: 7,
-      brickRows: 5,
       brickLayout: [
-        [1, 2, 1, 2, 1, 2, 1],
-        [2, 1, 2, 1, 2, 1, 2],
-        [1, 2, 1, 2, 1, 2, 1],
-        [2, 1, 2, 1, 2, 1, 2],
-        [1, 2, 1, 2, 1, 2, 1]
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
       ],
       bricks: []
     }
@@ -67,14 +67,12 @@ export default {
       }
     }
   },
-  created () {
-    this.startTicker()
-  },
   mounted () {
     window.addEventListener('resize', () => {
       this.updateDimensions()
     })
     this.updateDimensions()
+    this.startTicker()
   },
   methods: {
     updateDimensions () {
@@ -87,18 +85,29 @@ export default {
       this.bricks.push(brick)
     },
     looseLife () {
-      this.stopTicker()
+      this.dead = true
+      // this.stopTicker()
       if (this.livesLeft === 0) {
         console.log('game over')
+        this.stopTicker()
       } else {
         this.$store.commit('looseLife')
-        this.$refs.ball.reset()
+        setTimeout(() => {
+          this.stopTicker()
+          this.reset()
+        }, 1000)
         setTimeout(() => {
           this.startTicker()
         }, 2000)
       }
     },
+    reset () {
+      this.$refs.ball.reset()
+      this.$refs.paddle.reset()
+    },
     startTicker () {
+      this.dead = false
+      this.reset()
       this.ticker = setInterval(() => {
         this.move()
       }, 20)
@@ -109,7 +118,7 @@ export default {
     move () {
       this.$refs.ball.move()
       this.$refs.paddle.move()
-      this.checkCollision()
+      if (!this.dead) this.checkCollision()
     },
     checkCollision () {
       let ball = this.$refs.ball
@@ -144,6 +153,7 @@ export default {
 
 <style>
 #app {
+  font-family: 'Press Start 2P';
   height: 100%;
   background: #463654;
 }

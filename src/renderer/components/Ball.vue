@@ -6,12 +6,20 @@
 export default {
   data () {
     return {
-      x: 100,
-      y: 260,
+      x: 0,
+      y: 0,
       size: 20,
       angle: 7 / 4 * Math.PI,
       speed: 8
     }
+  },
+  computed: {
+    gameboardDimensions () {
+      return this.$store.getters.gameboardDimensions
+    }
+  },
+  mounted () {
+    this.reset()
   },
   methods: {
     move () {
@@ -28,8 +36,9 @@ export default {
       this.angle = collision.newAngle
     },
     reset () {
-      this.x = 100
-      this.y = 260
+      this.angle = Math.PI / 2
+      this.x = (this.gameboardDimensions.w - this.size) / 2
+      this.y = 400
     }
   }
 }

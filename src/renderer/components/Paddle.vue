@@ -68,6 +68,9 @@ export default {
         w: this.$el.offsetWidth,
         h: this.$el.offsetHeight
       }
+    },
+    reset () {
+      this.x = ((this.gameboardWidth - this.width) / 2) / this.gameboardWidth * 100
     }
   }
 }

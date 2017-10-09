@@ -13,6 +13,9 @@ export default {
       bounds: {}
     }
   },
+  created () {
+    if (this.type === 0) this.destroyed = true
+  },
   mounted () {
     window.addEventListener('resize', () => {
       this.calculateBounds()
@@ -77,7 +80,7 @@ export default {
 .brick {
   vertical-align: bottom;
   display: inline-block;
-  width: 100px;
+  width: 80px;
   height: 40px;
   margin: 0;
   transition: all .3s ease-out;
