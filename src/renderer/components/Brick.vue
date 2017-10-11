@@ -45,9 +45,9 @@ export default {
     handleHit () {
       this.hits++
       if (this.type === 2) {
-        this.destroyed = this.hits > 1
+        if (this.hits > 1) this.destroy()
       } else {
-        this.destroyed = true
+        this.destroy()
       }
       let points = 0
       switch (this.type) {
@@ -55,6 +55,10 @@ export default {
         case 2: points = 50; break
       }
       this.$store.commit('addPoints', points)
+    },
+    destroy () {
+      this.destroyed = true
+      if (Math.random() < 0.1) this.$emit('powerup', this.bounds)
     },
     collidesWith (ball) {
       // We can't collide with broken bricks
@@ -68,6 +72,7 @@ export default {
         let newAngle = nearX < nearY ? Math.PI - ball.angle : 2 * Math.PI - ball.angle
         return {
           target: 'brick',
+          destroyed: this.destroyed,
           newAngle: newAngle
         }
       }

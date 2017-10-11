@@ -55,7 +55,7 @@ export default {
     },
     collidesWith (ball) {
       if (ball.y + ball.size > this.bounds.y && ball.x > this.bounds.x && ball.x < this.bounds.x + this.bounds.w) {
-        let newAngle = Math.PI * 0.85 * (1 - (ball.x - this.bounds.x) / this.bounds.w)
+        let newAngle = Math.PI * 0.80 * (1 - (ball.x - this.bounds.x) / this.bounds.w) + Math.PI * 0.1
         return {
           newAngle: newAngle
         }

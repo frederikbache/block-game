@@ -9,8 +9,9 @@ export default {
       x: 0,
       y: 0,
       size: 20,
-      angle: 7 / 4 * Math.PI,
-      speed: 8
+      angle: Math.PI / 2,
+      speed: 8,
+      powerMode: false
     }
   },
   computed: {
@@ -18,13 +19,8 @@ export default {
       return this.$store.getters.gameboardDimensions
     }
   },
-  mounted () {
-    this.reset()
-  },
   methods: {
     move () {
-      // Increase speed
-      // this.speed += 0.001
       // Ball movement
       let dx = Math.cos(this.angle) * this.speed
       let dy = Math.sin(this.angle) * this.speed
@@ -32,13 +28,14 @@ export default {
       this.y += -dy
     },
     handleCollision (collision) {
-      // if (collision.target === 'brick') return
+      if (collision.target === 'brick' && this.powerMode && collision.destroyed) return
       this.angle = collision.newAngle
     },
     reset () {
       this.angle = Math.PI / 2
       this.x = (this.gameboardDimensions.w - this.size) / 2
       this.y = 400
+      this.powerMode = false
     }
   }
 }

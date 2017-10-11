@@ -2,9 +2,10 @@
   <div id="app">
     <life-counter></life-counter>
     <score-counter></score-counter>
+    <power-up @created="powerUpCreated" @hit="powerUpHit" v-for="powerUp in powerUps" :bounds="powerUp"></power-up>
     <div class="bricks">
       <div v-for="row in brickLayout">
-        <brick @created="brickCreated" :type="brick" v-for="brick in row"></brick>
+        <brick @created="brickCreated" @powerup="createPowerUp" :type="brick" v-for="brick in row"></brick>
       </div>
     </div>
     <ball ref="ball"></ball>
@@ -18,6 +19,7 @@ import Brick from './components/Brick'
 import Paddle from './components/Paddle'
 import LifeCounter from './components/LifeCounter'
 import ScoreCounter from './components/ScoreCounter'
+import PowerUp from './components/PowerUp'
 
 export default {
   name: 'block-game',
@@ -26,22 +28,26 @@ export default {
     Brick,
     Paddle,
     LifeCounter,
-    ScoreCounter
+    ScoreCounter,
+    PowerUp
   },
   data () {
     return {
       dead: false,
       lives: 2,
       ticker: null,
+      // TODO Do levels
       brickLayout: [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
       ],
-      bricks: []
+      bricks: [],
+      powerUps: [],
+      powerUpRefs: []
     }
   },
   computed: {
@@ -61,10 +67,7 @@ export default {
   },
   watch: {
     bricksLeft (val) {
-      console.log('Bricks left: ', val)
-      if (val === 0) {
-        this.stopTicker()
-      }
+      if (val === 0) this.stopTicker()
     }
   },
   mounted () {
@@ -84,12 +87,18 @@ export default {
     brickCreated (brick) {
       this.bricks.push(brick)
     },
+    powerUpCreated (powerUp) {
+      this.powerUpRefs.push(powerUp)
+    },
+    powerUpHit () {
+      this.$refs.ball.powerMode = true
+    },
     looseLife () {
       this.dead = true
       // this.stopTicker()
       if (this.livesLeft === 0) {
-        console.log('game over')
         this.stopTicker()
+        // TODO Show game over screen
       } else {
         this.$store.commit('looseLife')
         setTimeout(() => {
@@ -118,17 +127,23 @@ export default {
     move () {
       this.$refs.ball.move()
       this.$refs.paddle.move()
+      for (let i in this.powerUpRefs) {
+        this.powerUpRefs[i].move()
+      }
       if (!this.dead) this.checkCollision()
+    },
+    createPowerUp (bounds) {
+      this.powerUps.push(bounds)
     },
     checkCollision () {
       let ball = this.$refs.ball
-
+      // Paddle collision
       let paddleCollision = this.$refs.paddle.collidesWith(ball)
       if (paddleCollision) {
         ball.handleCollision(paddleCollision)
         return
       }
-
+      // Brick collisions
       for (let i in this.bricks) {
         let brickCollision = this.bricks[i].collidesWith(ball)
         if (brickCollision) {
@@ -136,15 +151,24 @@ export default {
           return
         }
       }
-
+      // Top / bottom
       if (ball.y < 0) {
         ball.angle = 2 * Math.PI - ball.angle
-      } else if (ball.y + ball.size > this.gameboardDimensions.h) {
+      } else if (ball.y > this.gameboardDimensions.h) {
         this.looseLife()
       }
-      // Side edges
+      // Left / right
       if (ball.x + ball.size > this.gameboardDimensions.w || ball.x < 0) {
         ball.angle = Math.PI - ball.angle
+      }
+
+      for (let i in this.powerUpRefs) {
+        let powerUp = this.powerUpRefs[i]
+        if (powerUp.hit) continue
+        let paddleCollision = this.$refs.paddle.collidesWith(powerUp)
+        if (paddleCollision) {
+          powerUp.handleHit()
+        }
       }
     }
   }
