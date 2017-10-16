@@ -2,13 +2,11 @@
   <div id="app">
     <life-counter></life-counter>
     <score-counter></score-counter>
-    <power-up @created="powerUpCreated" @hit="powerUpHit" v-for="powerUp in powerUps" :bounds="powerUp"></power-up>
+    <power-up  v-for="powerUp in powerUps" :key="powerUp.id" :data="powerUp"></power-up>
     <div class="bricks">
-      <div v-for="row in brickLayout">
-        <brick @created="brickCreated" @powerup="createPowerUp" :type="brick" v-for="brick in row"></brick>
-      </div>
+        <brick :data="brick" :key="brick.id" v-for="brick in storeBricks"></brick>
     </div>
-    <ball ref="ball"></ball>
+    <ball v-for="ball in balls" :key="ball.id" :data="ball"></ball>
     <paddle ref="paddle"></paddle>
   </div>
 </template>
@@ -34,7 +32,6 @@ export default {
   data () {
     return {
       dead: false,
-      lives: 2,
       ticker: null,
       // TODO Do levels
       brickLayout: [
@@ -46,11 +43,19 @@ export default {
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
       ],
       bricks: [],
-      powerUps: [],
       powerUpRefs: []
     }
   },
   computed: {
+    balls () {
+      return this.$store.getters.allBalls
+    },
+    powerUps () {
+      return this.$store.getters.allPowerUps
+    },
+    storeBricks () {
+      return this.$store.getters.allBricks
+    },
     gameboardDimensions () {
       return this.$store.getters.gameboardDimensions
     },
@@ -58,16 +63,20 @@ export default {
       return this.$store.getters.livesLeft
     },
     bricksLeft () {
-      let bricksLeft = 0
-      for (let i in this.bricks) {
-        if (!this.bricks[i].destroyed) bricksLeft++
-      }
-      return bricksLeft
+      return this.$store.getters.bricksLeft
     }
   },
   watch: {
     bricksLeft (val) {
-      if (val === 0) this.stopTicker()
+      if (val === 0) {
+        this.stopTicker()
+        setTimeout(() => {
+          this.$store.dispatch('loadNextLevel')
+          setTimeout(() => {
+            this.startTicker()
+          }, 2000)
+        }, 1000)
+      }
     }
   },
   mounted () {
@@ -75,7 +84,7 @@ export default {
       this.updateDimensions()
     })
     this.updateDimensions()
-    this.startTicker()
+    this.startGame()
   },
   methods: {
     updateDimensions () {
@@ -84,16 +93,17 @@ export default {
         h: document.getElementById('app').offsetHeight
       })
     },
-    brickCreated (brick) {
-      this.bricks.push(brick)
-    },
-    powerUpCreated (powerUp) {
-      this.powerUpRefs.push(powerUp)
-    },
-    powerUpHit () {
-      this.$refs.ball.powerMode = true
+    looseBall (ball) {
+      this.$store.commit('removeBall', ball.id)
+      this.$nextTick(() => {
+        console.log(this.balls)
+        if (this.balls.length === 0) {
+          this.looseLife()
+        }
+      })
     },
     looseLife () {
+      console.log('Lost life')
       this.dead = true
       // this.stopTicker()
       if (this.livesLeft === 0) {
@@ -103,20 +113,22 @@ export default {
         this.$store.commit('looseLife')
         setTimeout(() => {
           this.stopTicker()
-          this.reset()
+          this.$store.dispatch('createBall')
         }, 1000)
         setTimeout(() => {
           this.startTicker()
         }, 2000)
       }
     },
-    reset () {
-      this.$refs.ball.reset()
-      this.$refs.paddle.reset()
+    startGame () {
+      this.$store.dispatch('startNewGame')
+      this.startTicker()
+      /* setInterval(() => {
+        this.$store.dispatch('splitBall')
+      }, 10000) */
     },
     startTicker () {
       this.dead = false
-      this.reset()
       this.ticker = setInterval(() => {
         this.move()
       }, 20)
@@ -125,49 +137,43 @@ export default {
       clearInterval(this.ticker)
     },
     move () {
-      this.$refs.ball.move()
+      this.$store.commit('moveBalls')
+      this.$store.commit('movePowerUps')
+      // this.$refs.ball.move()
       this.$refs.paddle.move()
-      for (let i in this.powerUpRefs) {
-        this.powerUpRefs[i].move()
-      }
       if (!this.dead) this.checkCollision()
     },
-    createPowerUp (bounds) {
-      this.powerUps.push(bounds)
-    },
     checkCollision () {
-      let ball = this.$refs.ball
-      // Paddle collision
-      let paddleCollision = this.$refs.paddle.collidesWith(ball)
-      if (paddleCollision) {
-        ball.handleCollision(paddleCollision)
-        return
-      }
-      // Brick collisions
-      for (let i in this.bricks) {
-        let brickCollision = this.bricks[i].collidesWith(ball)
-        if (brickCollision) {
-          ball.handleCollision(brickCollision)
-          return
+      for (let i in this.balls) {
+        let ball = this.balls[i]
+        if (!ball) continue
+        if (ball.y < 0) {
+          this.$store.dispatch('handleCollision', {
+            dx: 0,
+            dy: 0,
+            newAngle: 2 * Math.PI - ball.angle,
+            ball: ball
+          })
+        } else if (ball.y > this.gameboardDimensions.h) {
+          this.looseBall(ball)
+        }
+        // Left / right
+        if (ball.x + ball.size > this.gameboardDimensions.w || ball.x < 0) {
+          this.$store.dispatch('handleCollision', {
+            dx: 0,
+            dy: 0,
+            newAngle: Math.PI - ball.angle,
+            ball: ball
+          })
         }
       }
-      // Top / bottom
-      if (ball.y < 0) {
-        ball.angle = 2 * Math.PI - ball.angle
-      } else if (ball.y > this.gameboardDimensions.h) {
-        this.looseLife()
-      }
-      // Left / right
-      if (ball.x + ball.size > this.gameboardDimensions.w || ball.x < 0) {
-        ball.angle = Math.PI - ball.angle
-      }
 
-      for (let i in this.powerUpRefs) {
-        let powerUp = this.powerUpRefs[i]
-        if (powerUp.hit) continue
-        let paddleCollision = this.$refs.paddle.collidesWith(powerUp)
-        if (paddleCollision) {
-          powerUp.handleHit()
+      for (let i in this.powerUps) {
+        let p = this.powerUps[i]
+        if (!p) continue
+        if (p.y - p.size > this.gameboardDimensions.h) {
+          this.$store.commit('removePowerUp', p.id)
+          console.log('Lost power up')
         }
       }
     }

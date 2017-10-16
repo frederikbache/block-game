@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="19" viewBox="0 0 20 19">
+  <defs>
+    <path id="life-a" d="M429,369.4 L427.6,368 C422.4,363.4 419,360.3 419,356.5 C419,353.4 421.4,351 424.5,351 C426.2,351 427.9,351.8 429,353.1 C430.1,351.8 431.8,351 433.5,351 C436.6,351 439,353.4 439,356.5 C439,360.3 435.6,363.4 430.4,368 L429,369.4 L429,369.4 Z"/>
+    <filter id="life-b" width="105%" height="107.8%" x="-2.5%" y="-2.8%" filterUnits="objectBoundingBox">
+      <feOffset dx="1" dy="1" in="SourceAlpha" result="shadowOffsetInner1"/>
+      <feComposite in="shadowOffsetInner1" in2="SourceAlpha" k2="-1" k3="1" operator="arithmetic" result="shadowInnerInner1"/>
+      <feColorMatrix in="shadowInnerInner1" result="shadowMatrixInner1" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.200464221 0"/>
+      <feOffset dx="-1" dy="-1" in="SourceAlpha" result="shadowOffsetInner2"/>
+      <feComposite in="shadowOffsetInner2" in2="SourceAlpha" k2="-1" k3="1" operator="arithmetic" result="shadowInnerInner2"/>
+      <feColorMatrix in="shadowInnerInner2" result="shadowMatrixInner2" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 1  0 0 0 0.2 0"/>
+      <feMerge>
+        <feMergeNode in="shadowMatrixInner1"/>
+        <feMergeNode in="shadowMatrixInner2"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g fill="none" fill-rule="evenodd" transform="translate(-419 -351)">
+    <use fill="#D26771" xlink:href="#life-a"/>
+    <use fill="#000" filter="url(#life-b)" xlink:href="#life-a"/>
+  </g>
+</svg>

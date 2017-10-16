@@ -5,7 +5,7 @@
 
 <script>
 export default {
-  props: ['type'],
+  props: ['data'],
   data () {
     return {
       destroyed: false,
@@ -14,7 +14,7 @@ export default {
     }
   },
   created () {
-    if (this.type === 0) this.destroyed = true
+    if (this.data.type === 0) this.destroyed = true
   },
   mounted () {
     window.addEventListener('resize', () => {
@@ -29,8 +29,24 @@ export default {
         'brick--hit': this.hits > 0,
         'brick--destroyed': this.destroyed
       }
-      classes['brick--' + this.type] = true
+      classes['brick--' + this.data.type] = true
       return classes
+    },
+    balls () {
+      return this.$store.getters.allBalls
+    }
+  },
+  watch: {
+    balls: {
+      handler (balls) {
+        for (let i in balls) {
+          let collision = this.collidesWith(balls[i])
+          if (collision) {
+            this.$store.dispatch('handleCollision', collision)
+          }
+        }
+      },
+      deep: true
     }
   },
   methods: {
@@ -44,13 +60,13 @@ export default {
     },
     handleHit () {
       this.hits++
-      if (this.type === 2) {
+      if (this.data.type === 2) {
         if (this.hits > 1) this.destroy()
       } else {
         this.destroy()
       }
       let points = 0
-      switch (this.type) {
+      switch (this.data.type) {
         case 1: points = 25; break
         case 2: points = 50; break
       }
@@ -58,22 +74,36 @@ export default {
     },
     destroy () {
       this.destroyed = true
-      if (Math.random() < 0.1) this.$emit('powerup', this.bounds)
+      if (Math.random() < 0.08) {
+        this.$store.dispatch('spawnPowerUp', this.bounds)
+        // this.$emit('powerup', this.bounds)
+      }
+      this.$store.commit('destroyBrick', this.data.id)
     },
     collidesWith (ball) {
       // We can't collide with broken bricks
       if (this.destroyed) return false
-      let inXBounds = ball.x + ball.size >= this.bounds.x && ball.x <= this.bounds.x + this.bounds.w
-      let inYBounds = ball.y + ball.size >= this.bounds.y && ball.y <= this.bounds.y + this.bounds.h
+      let inXBounds = ball.x + ball.size > this.bounds.x && ball.x < this.bounds.x + this.bounds.w
+      let inYBounds = ball.y + ball.size > this.bounds.y && ball.y < this.bounds.y + this.bounds.h
       if (inXBounds && inYBounds) {
         this.handleHit()
+        let leftEdgeDistance = ball.x + ball.size - this.bounds.x
+        let rightEdgeDistance = ball.x - this.bounds.x - this.bounds.w
+        let topEdgeDistance = ball.y + ball.size - this.bounds.y
+        let bottomEdgeDistance = ball.y - this.bounds.y - this.bounds.h
         let nearX = Math.min(Math.abs(ball.x + ball.size - this.bounds.x), Math.abs(ball.x - this.bounds.x - this.bounds.w))
         let nearY = Math.min(Math.abs(ball.y + ball.size - this.bounds.y), Math.abs(ball.y - this.bounds.y - this.bounds.h))
+        if (nearY < nearX && topEdgeDistance < -bottomEdgeDistance) {
+          console.log('Hit the top edge', topEdgeDistance)
+        }
         let newAngle = nearX < nearY ? Math.PI - ball.angle : 2 * Math.PI - ball.angle
         return {
           target: 'brick',
+          ball: ball,
           destroyed: this.destroyed,
-          newAngle: newAngle
+          newAngle: newAngle,
+          dx: nearX < nearY ? (leftEdgeDistance < -rightEdgeDistance ? -leftEdgeDistance * 2 : -rightEdgeDistance * 2) : 0,
+          dy: nearX >= nearY ? (topEdgeDistance < -bottomEdgeDistance ? -topEdgeDistance * 2 : -bottomEdgeDistance * 2) * 2 : 0
         }
       }
     }
@@ -82,6 +112,11 @@ export default {
 </script>
 
 <style>
+.bricks {
+  max-width: 800px;
+  margin: auto;
+}
+
 .brick {
   vertical-align: bottom;
   display: inline-block;

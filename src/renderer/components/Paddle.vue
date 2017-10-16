@@ -29,6 +29,36 @@ export default {
   computed: {
     gameboardWidth () {
       return this.$store.getters.gameboardDimensions.w
+    },
+    balls () {
+      return this.$store.getters.allBalls
+    },
+    powerUps () {
+      return this.$store.getters.allPowerUps
+    }
+  },
+  watch: {
+    balls: {
+      handler (balls) {
+        for (let i in balls) {
+          let collision = this.collidesWith(balls[i])
+          if (collision) {
+            this.$store.dispatch('handleCollision', collision)
+          }
+        }
+      },
+      deep: true
+    },
+    powerUps: {
+      handler (powerUps) {
+        for (let i in powerUps) {
+          let collision = this.powerUpCollision(powerUps[i])
+          if (collision) {
+            this.$store.dispatch('powerUpCaught', powerUps[i])
+          }
+        }
+      },
+      deep: true
     }
   },
   mounted () {
@@ -53,10 +83,19 @@ export default {
       }
       this.calculateBounds()
     },
+    powerUpCollision (p) {
+      if (!p) return
+      if (p.y + p.size > this.bounds.y && p.y <= this.bounds.y + this.bounds.h && p.x > this.bounds.x && p.x < this.bounds.x + this.bounds.w) {
+        return true
+      }
+    },
     collidesWith (ball) {
-      if (ball.y + ball.size > this.bounds.y && ball.x > this.bounds.x && ball.x < this.bounds.x + this.bounds.w) {
+      if (ball.y + ball.size > this.bounds.y && ball.y + ball.size <= this.bounds.y + ball.speed && ball.x > this.bounds.x && ball.x < this.bounds.x + this.bounds.w) {
         let newAngle = Math.PI * 0.80 * (1 - (ball.x - this.bounds.x) / this.bounds.w) + Math.PI * 0.1
         return {
+          dx: 0,
+          dy: 0,
+          ball: ball,
           newAngle: newAngle
         }
       }
