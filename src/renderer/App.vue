@@ -8,6 +8,7 @@
     </div>
     <ball v-for="ball in balls" :key="ball.id" :data="ball"></ball>
     <paddle ref="paddle"></paddle>
+    <canvas id="debug" width="1000px" height="563px"></canvas>
   </div>
 </template>
 
@@ -64,6 +65,9 @@ export default {
     },
     bricksLeft () {
       return this.$store.getters.bricksLeft
+    },
+    linePoints () {
+      return this.$store.getters.points
     }
   },
   watch: {
@@ -76,6 +80,23 @@ export default {
             this.startTicker()
           }, 2000)
         }, 1000)
+      }
+    },
+    linePoints (val) {
+      var c = document.getElementById('debug')
+      var ctx = c.getContext('2d')
+      ctx.clearRect(0, 0, c.width, c.height)
+      ctx.beginPath()
+      ctx.moveTo(val[0].x, val[0].y)
+      for (let i = 1; i < val.length; i++) {
+        ctx.lineTo(val[i].x, val[i].y)
+      }
+      ctx.strokeStyle = '#679DD2'
+      ctx.stroke()
+      for (let i = 1; i < val.length; i++) {
+        ctx.beginPath()
+        ctx.arc(val[i].x, val[i].y, 10, 0, 2 * Math.PI)
+        ctx.stroke()
       }
     }
   },
@@ -137,7 +158,7 @@ export default {
       clearInterval(this.ticker)
     },
     move () {
-      this.$store.commit('moveBalls')
+      this.$store.dispatch('moveBalls')
       this.$store.commit('movePowerUps')
       // this.$refs.ball.move()
       this.$refs.paddle.move()
@@ -147,24 +168,8 @@ export default {
       for (let i in this.balls) {
         let ball = this.balls[i]
         if (!ball) continue
-        if (ball.y < 0) {
-          this.$store.dispatch('handleCollision', {
-            dx: 0,
-            dy: 0,
-            newAngle: 2 * Math.PI - ball.angle,
-            ball: ball
-          })
-        } else if (ball.y > this.gameboardDimensions.h) {
+        if (ball.y > this.gameboardDimensions.h) {
           this.looseBall(ball)
-        }
-        // Left / right
-        if (ball.x + ball.size > this.gameboardDimensions.w || ball.x < 0) {
-          this.$store.dispatch('handleCollision', {
-            dx: 0,
-            dy: 0,
-            newAngle: Math.PI - ball.angle,
-            ball: ball
-          })
         }
       }
 
@@ -182,6 +187,15 @@ export default {
 </script>
 
 <style>
+#debug {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  opacity: 0;
+}
 #app {
   font-family: 'Press Start 2P';
   height: 100%;

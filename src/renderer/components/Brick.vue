@@ -10,7 +10,7 @@ export default {
     return {
       destroyed: false,
       hits: 0,
-      bounds: {}
+      bounds: {x: -3000, y: -3000, w: 0, h: 0}
     }
   },
   created () {
@@ -26,8 +26,8 @@ export default {
   computed: {
     brickClass () {
       let classes = {
-        'brick--hit': this.hits > 0,
-        'brick--destroyed': this.destroyed
+        'brick--hit': this.data.hits > 0,
+        'brick--destroyed': this.data.destroyed
       }
       classes['brick--' + this.data.type] = true
       return classes
@@ -39,12 +39,12 @@ export default {
   watch: {
     balls: {
       handler (balls) {
-        for (let i in balls) {
+        /* for (let i in balls) {
           let collision = this.collidesWith(balls[i])
           if (collision) {
             this.$store.dispatch('handleCollision', collision)
           }
-        }
+        } */
       },
       deep: true
     }
@@ -57,6 +57,7 @@ export default {
         w: this.$el.offsetWidth,
         h: this.$el.offsetHeight
       }
+      this.$store.commit('saveBrickBounds', {id: this.data.id, bounds: this.bounds})
     },
     handleHit () {
       this.hits++
@@ -138,6 +139,10 @@ export default {
 }
 
 .brick--destroyed {
-  opacity: 0
+  opacity: 0;
+}
+
+.brick--0 {
+  opacity: 0;
 }
 </style>

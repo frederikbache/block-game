@@ -40,12 +40,12 @@ export default {
   watch: {
     balls: {
       handler (balls) {
-        for (let i in balls) {
+        /* for (let i in balls) {
           let collision = this.collidesWith(balls[i])
           if (collision) {
             this.$store.dispatch('handleCollision', collision)
           }
-        }
+        } */
       },
       deep: true
     },
@@ -92,6 +92,7 @@ export default {
     collidesWith (ball) {
       if (ball.y + ball.size > this.bounds.y && ball.y + ball.size <= this.bounds.y + ball.speed && ball.x > this.bounds.x && ball.x < this.bounds.x + this.bounds.w) {
         let newAngle = Math.PI * 0.80 * (1 - (ball.x - this.bounds.x) / this.bounds.w) + Math.PI * 0.1
+        this.$store.commit('addPoint', {x: ball.x + ball.size / 2, y: ball.y + ball.size / 2})
         return {
           dx: 0,
           dy: 0,
@@ -107,6 +108,7 @@ export default {
         w: this.$el.offsetWidth,
         h: this.$el.offsetHeight
       }
+      this.$store.commit('savePaddleBounds', this.bounds)
     },
     reset () {
       this.x = ((this.gameboardWidth - this.width) / 2) / this.gameboardWidth * 100
